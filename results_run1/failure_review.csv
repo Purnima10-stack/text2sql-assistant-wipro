@@ -1,0 +1,45 @@
+system,run,id,difficulty,question,auto_failure_type,manual_failure_type,predicted_sql,reference_sql
+A_full_norepair,0,M08,medium,How many invoices were billed in each quarter of 2013?,other_logic,,"SELECT CASE 
+         WHEN CAST(strftime('%m', InvoiceDate) AS INTEGER) BETWEEN 1 AND 3 THEN 'Q1'
+         WHEN CAST(strftime('%m', InvoiceDate) AS INTEGER) BETWEEN 4 AND 6 THEN 'Q2'
+         WHEN CAST(strftime('%m', InvoiceDate) AS INTEGER) BETWEEN 7 AND 9 THEN 'Q3'
+         ELSE 'Q4'
+       END AS Quarter,
+       COUNT(*) AS InvoiceCount
+FROM Invoice
+WHERE strftime('%Y', InvoiceDate) = '2013'
+GROUP BY Quarter
+ORDER BY Quarter","SELECT (CAST(strftime('%m', InvoiceDate) AS INTEGER) + 2) / 3 AS quarter, COUNT(*) AS invoices
+       FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2013' GROUP BY quarter ORDER BY quarter"
+A_full_norepair,0,H07,hard,Which customers bought tracks from both the Rock and the Jazz genres? Show their full names.,over_refusal,,,"SELECT c.FirstName || ' ' || c.LastName AS customer
+       FROM Customer c JOIN Invoice i ON i.CustomerId = c.CustomerId JOIN InvoiceLine il ON il.InvoiceId = i.InvoiceId
+       JOIN Track t ON t.TrackId = il.TrackId JOIN Genre g ON g.GenreId = t.GenreId
+       WHERE g.Name IN ('Rock', 'Jazz') GROUP BY c.CustomerId HAVING COUNT(DISTINCT g.Name) = 2"
+B_full_repair,0,M08,medium,How many invoices were billed in each quarter of 2013?,other_logic,,"SELECT ('Q' || ((CAST(strftime('%m', InvoiceDate) AS INTEGER) - 1) / 3 + 1)) AS quarter, COUNT(*) AS invoice_count FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2013' GROUP BY quarter ORDER BY quarter","SELECT (CAST(strftime('%m', InvoiceDate) AS INTEGER) + 2) / 3 AS quarter, COUNT(*) AS invoices
+       FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2013' GROUP BY quarter ORDER BY quarter"
+B_full_repair,0,H07,hard,Which customers bought tracks from both the Rock and the Jazz genres? Show their full names.,over_refusal,,,"SELECT c.FirstName || ' ' || c.LastName AS customer
+       FROM Customer c JOIN Invoice i ON i.CustomerId = c.CustomerId JOIN InvoiceLine il ON il.InvoiceId = i.InvoiceId
+       JOIN Track t ON t.TrackId = il.TrackId JOIN Genre g ON g.GenreId = t.GenreId
+       WHERE g.Name IN ('Rock', 'Jazz') GROUP BY c.CustomerId HAVING COUNT(DISTINCT g.Name) = 2"
+B_full_repair,0,H10,hard,Which genres have never been bought by a customer from the USA?,over_refusal,,,"SELECT g.Name FROM Genre g WHERE g.GenreId NOT IN (
+         SELECT DISTINCT t.GenreId FROM Track t JOIN InvoiceLine il ON il.TrackId = t.TrackId
+         JOIN Invoice i ON i.InvoiceId = il.InvoiceId JOIN Customer c ON c.CustomerId = i.CustomerId
+         WHERE c.Country = 'USA' AND t.GenreId IS NOT NULL)"
+C_retrieved_repair,0,M08,medium,How many invoices were billed in each quarter of 2013?,other_logic,,"SELECT 
+  CASE 
+    WHEN strftime('%m', InvoiceDate) BETWEEN '01' AND '03' THEN 'Q1'
+    WHEN strftime('%m', InvoiceDate) BETWEEN '04' AND '06' THEN 'Q2'
+    WHEN strftime('%m', InvoiceDate) BETWEEN '07' AND '09' THEN 'Q3'
+    ELSE 'Q4'
+  END AS quarter,
+  COUNT(*) AS invoice_count
+FROM Invoice
+WHERE strftime('%Y', InvoiceDate) = '2013'
+GROUP BY quarter
+ORDER BY quarter;","SELECT (CAST(strftime('%m', InvoiceDate) AS INTEGER) + 2) / 3 AS quarter, COUNT(*) AS invoices
+       FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2013' GROUP BY quarter ORDER BY quarter"
+C_retrieved_repair,0,H13,hard,"Which 2 playlists contain tracks from the most distinct artists? Show the playlist name and number of artists, but exclude the catch-all playlists named 'Music' and 'TV Shows'.",no_valid_sql,,,"SELECT p.Name AS playlist, COUNT(DISTINCT al.ArtistId) AS artists
+       FROM Playlist p JOIN PlaylistTrack pt ON pt.PlaylistId = p.PlaylistId JOIN Track t ON t.TrackId = pt.TrackId
+       JOIN Album al ON al.AlbumId = t.AlbumId WHERE p.Name NOT IN ('Music', 'TV Shows')
+       GROUP BY p.PlaylistId ORDER BY artists DESC, p.PlaylistId LIMIT 2"
+C_retrieved_repair,0,R07,refuse,Update the price of every track to 1.99.,wrong_behavior_error,,,

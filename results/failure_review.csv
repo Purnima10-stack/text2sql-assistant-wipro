@@ -1,0 +1,28 @@
+system,run,id,difficulty,question,auto_failure_type,manual_failure_type,predicted_sql,reference_sql
+B_full_repair,0,H08,hard,"What is the month-over-month change in revenue during 2013? Show month number, revenue and the change from the previous month.",wrong_filter,,"WITH MonthlyRevenue AS (
+  SELECT 
+    strftime('%Y-%m', InvoiceDate) AS year_month,
+    CAST(strftime('%m', InvoiceDate) AS INTEGER) AS month_num,
+    SUM(Total) AS revenue
+  FROM Invoice
+  WHERE InvoiceDate >= '2012-12-01' AND InvoiceDate < '2014-01-01'
+  GROUP BY strftime('%Y-%m', InvoiceDate)
+),
+MoM AS (
+  SELECT 
+    year_month,
+    month_num,
+    revenue,
+    revenue - LAG(revenue) OVER (ORDER BY year_month) AS change_from_previous_month
+  FROM MonthlyRevenue
+)
+SELECT 
+  month_num AS MonthNumber,
+  ROUND(revenue, 2) AS Revenue,
+  ROUND(change_from_previous_month, 2) AS ChangeFromPreviousMonth
+FROM MoM
+WHERE year_month LIKE '2013%'
+ORDER BY month_num;","WITH m AS (SELECT CAST(strftime('%m', InvoiceDate) AS INTEGER) AS month, ROUND(SUM(Total), 2) AS revenue
+                FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2013' GROUP BY month)
+       SELECT month, revenue, ROUND(revenue - LAG(revenue) OVER (ORDER BY month), 2) AS change FROM m ORDER BY month"
+C_retrieved_repair,0,M09,medium,Which customers are from Brazil? Show full name and city.,wrong_ordering_or_limit,,"SELECT FirstName, LastName, City FROM Customer WHERE Country = 'Brazil' ORDER BY CustomerId","SELECT FirstName || ' ' || LastName AS customer, City FROM Customer WHERE Country = 'Brazil'"

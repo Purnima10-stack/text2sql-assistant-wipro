@@ -1,0 +1,6 @@
+__pycache__/
+.pytest_cache/
+results_simulated/
+.env
+.venv/
+EXPLAIN_FOR_CALL.md
